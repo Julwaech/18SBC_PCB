@@ -1,10 +1,10 @@
-# 18SBC PCB — Caribou Battery Connector Board
+# 18SBC PCB — Battery Connector Board
 
 ## Overview
-Custom PCB for the battery connector system of [Project Caribou](https://github.com/Arrow-air/project-caribou), a heavy-lift drone developed by Arrow Air.
+Custom PCB for the power distribution from the propulsion battery.
 
 ## Project Context
-This board serves as the battery-side connector interface for the Caribou power architecture. It handles high-current distribution from the 14S battery pack to the drone powertrain.
+This board serves as the battery-side connector interface for the Tattu 4.0 18S 30000mAh smart battery. It handles high-current distribution from the battery pack to the drone powertrain.
 
 ## Tools
 - **EDA:** KiCad 10
@@ -20,6 +20,3 @@ This board serves as the battery-side connector interface for the Caribou power 
 
 ## Status
 🟡 **Phase:** Initial Design
-
-## License
-Proprietary — Arrow Air
