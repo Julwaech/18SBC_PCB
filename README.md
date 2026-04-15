@@ -4,7 +4,7 @@
 
 ## Overview
 
-The 18SBC is a battery connector board that interfaces an 18S lithium-ion battery pack with the rest of the electrical system. It handles cell-group connections, voltage sensing, and power distribution.
+The 18SBC is a battery connector board that interfaces an 18S lithium-ion battery pack with the rest of the electrical system.
 
 ## Specifications
 
