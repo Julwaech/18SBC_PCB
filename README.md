@@ -78,9 +78,6 @@ At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5
 ### Protection
 - **Short circuit protection via fuse**
 
-## MCU Selection
-- Something like the STM32G4
-
 ## Repository Structure
 
 ```
