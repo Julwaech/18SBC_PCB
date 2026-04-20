@@ -40,7 +40,9 @@ Based on the motor data (Hobbywing XRotor X15):
 
 The Hover throttle is ~50%. The 100A nominal rating covers normal operations; the 200A spike rating handles full-throttle bursts.
 
-## Battery Connector
+## Connectors and Fuse
+
+### Battery Connector
 
 **Selected: [Prolanv EN60A](https://www.prolanv.com/2_2552837_5851637.html)**
 
@@ -58,6 +60,57 @@ The Hover throttle is ~50%. The 100A nominal rating covers normal operations; th
 The EN60A provides 300A total capacity across 5 power pairs, giving comfortable headroom above the 200A spike requirement. From the 6 signal pins, only 4 are used.
 
 At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5W per pair = 6W total — well within thermal limits.
+
+### Propulsion Screw Terminals
+
+**Selected: [Amphenol Anytek AMT0650009DB0000G](https://www.mouser.com/ProductDetail/Amphenol-Anytek/AMT0650009DB0000G)**
+
+These are the high-current screw terminals where cables to the Hobbywing X15 propulsion system are connected (+ and -).
+
+| Parameter | Value |
+|---|---|
+| Type | Screw Terminal, Power Tap |
+| Screw Size | M5 |
+| Pins | 6 |
+| Current Rating | 180A |
+| Mounting | Through-Hole DIP |
+| Contact Material | Brass + Steel Nut (matte tin plated) |
+| Torque | 18 lbf·in |
+
+Two sets of AMT0650009DB0000G screw terminals are used on the board: one pair for the propulsion output (+ / -), and another pair for mounting the main fuse (see below).
+
+### Signal Connector (Drone Interface)
+
+**Selected: [Amphenol AT13-12PB-BM03](https://www.amphenol-sine.com/AT13-12PB-BM03-12-Position-Right-Angle-Flange-Mount-PCB-Receptacle-Black-Tin-Plated-Contacts-Included-Keyed-B-Comparable-to-PN-DT13-12PB_p_9475.html) (or similar AT series)**
+
+This connector interfaces the 18SBC with the rest of the drone's electrical system (signal lines, regulated power outputs, CAN buses).
+
+| Parameter | Value |
+|---|---|
+| Series | Amphenol AT (automotive-grade) |
+| Type | Right-Angle Flange Mount PCB Receptacle |
+| Positions | 12 |
+| Keying | B |
+| Contact Plating | Tin |
+| Mating Connector | AT series cable plug (wire-to-board) |
+
+The AT series is an automotive/industrial-grade connector family designed for harsh environments — vibration-resistant, sealed, and rated for high mating cycles. The 12 positions carry regulated power outputs (12V, 5V, GND), CAN bus lines, and control signals.
+
+### Main Fuse (Short-Circuit Protection)
+
+**Selected: [Eaton AMXL-250](https://www.eaton.com/content/dam/eaton/products/electronic-components/resources/data-sheet/eaton-amx-amxl-automotive-bolt-in-fuse-data-sheet-elx1218-en.pdf)**
+
+The main fuse sits between the battery connector and the power output stage, protecting against short circuits. It is mounted on two AMT0650009DB0000G screw terminals (bolt-in design).
+
+| Parameter | Value |
+|---|---|
+| Type | Automotive bolt-in fuse |
+| Current Rating | 250A |
+| Voltage Rating | 125 Vdc |
+| Body | Ceramic |
+| Mounting | Bolt-in (M5 terminals) on 2x AMT0650009DB0000G |
+
+The 250A fuse rating provides short-circuit protection while allowing the full 200A spike current without nuisance blowing. The ceramic body handles the thermal demands of high-current interruption.
 
 ## MCU and Communication
 
@@ -112,6 +165,7 @@ Pin count provides comfortable headroom for all current functions with 9 GPIOs i
 - **High-side MOSFET switching** — N-channel MOSFETs with charge pump gate drive
 - **Precharge circuit** — soft-start via resistor + relay/MOSFET to limit inrush current
 - **Emergency kill switch** — hardware-level kill input, independent of MCU
+- **Main fuse** — Eaton AMXL-250 (250A) bolt-in fuse for short-circuit protection
 
 ### Voltage Regulation
 - **12V regulated output** — buck converter from battery voltage
@@ -124,7 +178,7 @@ Pin count provides comfortable headroom for all current functions with 9 GPIOs i
 - **WiFi / BLE** — integrated in ESP32-C3 for wireless diagnostics, configuration, and telemetry
 
 ### Protection
-- **Short circuit protection via fuse**
+- **Short circuit protection** — Eaton AMXL-250 bolt-in fuse (250A, 125Vdc) mounted on dedicated screw terminals
 
 ## Repository Structure
 
@@ -160,6 +214,9 @@ Pin count provides comfortable headroom for all current functions with 9 GPIOs i
 - [ESP32-C3-MINI-1 Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-c3-mini-1_datasheet_en.pdf) — MCU module
 - [MCP2515 Datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/MCP2515-Stand-Alone-CAN-Controller-with-SPI-20001801J.pdf) — CAN controller
 - [SN65HVD230 Datasheet](https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf) — 3.3V CAN transceiver
+- [AMT0650009DB0000G (Mouser)](https://www.mouser.com/ProductDetail/Amphenol-Anytek/AMT0650009DB0000G) — 180A screw terminal (propulsion + fuse mount)
+- [AT13-12PB-BM03 (Amphenol)](https://www.amphenol-sine.com/AT13-12PB-BM03-12-Position-Right-Angle-Flange-Mount-PCB-Receptacle-Black-Tin-Plated-Contacts-Included-Keyed-B-Comparable-to-PN-DT13-12PB_p_9475.html) — 12-pos signal connector
+- [Eaton AMXL-250 Datasheet (PDF)](https://www.eaton.com/content/dam/eaton/products/electronic-components/resources/data-sheet/eaton-amx-amxl-automotive-bolt-in-fuse-data-sheet-elx1218-en.pdf) — 250A bolt-in fuse
 - [DroneCAN](https://dronecan.github.io/) — CAN protocol for UAVs
 - [libcanard](https://github.com/dronecan/libcanard) — lightweight DroneCAN implementation in C
 - [Prolanv EN60A Connector](https://www.prolanv.com/2_2552837_5851637.html) — battery connector datasheet
