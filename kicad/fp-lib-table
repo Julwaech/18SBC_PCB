@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "18SBC") (type "KiCad") (uri "${KIPRJMOD}/libs/18SBC.pretty") (options "") (descr ""))
+)
