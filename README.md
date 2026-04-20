@@ -12,7 +12,8 @@ The 18SBC is a battery connector board that interfaces 18S smart battery packs (
 - Handle 100A continuous / 200A spike current
 - Provide regulated and isolated 12V and 5V outputs to the main system PCB (5V and 12V can share GND)
 - Active power switching with precharge and emergency shutoff
-- CAN bus communication (DroneCAN)
+- Dual CAN bus communication (battery protocol + DroneCAN)
+- Wireless connectivity (WiFi / BLE) for diagnostics and configuration
 
 ## Specifications
 
@@ -58,6 +59,53 @@ The EN60A provides 300A total capacity across 5 power pairs, giving comfortable 
 
 At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5W per pair = 6W total — well within thermal limits.
 
+## MCU and Communication
+
+### MCU: ESP32-C3-MINI-1
+
+The ESP32-C3-MINI-1 module is a compact RISC-V based microcontroller with integrated wireless connectivity. It includes a PCB antenna — no external antenna components are required. A keepout zone must be maintained around the antenna area on the PCB layout (no copper / ground plane underneath).
+
+| Parameter | Value |
+|---|---|
+| Core | 32-bit RISC-V, 160 MHz |
+| Flash | 4 MB (integrated) |
+| SRAM | 400 KB |
+| WiFi | 802.11 b/g/n (2.4 GHz) |
+| Bluetooth | BLE 5.0 |
+| GPIOs | 22 |
+| SPI | 3x (1 used for dual MCP2515) |
+| ADC | 6 channels, 12-bit |
+| Operating Voltage | 3.0 – 3.6V |
+| Deep Sleep Current | 5 uA |
+| Antenna | Integrated PCB antenna |
+
+### Dual CAN Bus (2x MCP2515 + Transceiver)
+
+Two independent CAN networks using external MCP2515 controllers on a shared SPI bus. This provides identical timing behavior on both buses and clean separation of the battery-side and drone-side CAN domains.
+
+| CAN Bus | Purpose | Controller | Transceiver |
+|---|---|---|---|
+| CAN 1 — Battery | Battery protocol (smart battery communication) | MCP2515 (SPI, CS1) | SN65HVD230 (3.3V) |
+| CAN 2 — Drone | DroneCAN (UAVCAN v0) interface to aircraft | MCP2515 (SPI, CS2) | SN65HVD230 (3.3V) |
+
+Each MCP2515 requires an 8 MHz crystal + 2x 22pF load capacitors. 120 Ohm termination resistors are optional (directly connected or selectable via solder jumper depending on bus topology).
+
+The board converts between the battery protocol (CAN 1) and DroneCAN (CAN 2) using [libcanard](https://github.com/dronecan/libcanard).
+
+### GPIO Allocation
+
+| Function | GPIOs | Notes |
+|---|---|---|
+| SPI Bus (shared) — SCK, MOSI, MISO | 3 | Directly routed to both MCP2515 |
+| MCP2515 #1 — CS1, INT1 | 2 | CAN 1 (Battery) |
+| MCP2515 #2 — CS2, INT2 | 2 | CAN 2 (Drone) |
+| Temperature Sensors | 2 | 1-Wire (e.g. DS18B20) or analog NTC via ADC |
+| Circuit Switching | 4 | MOSFET gate drive (e.g. precharge, kill switch, power enable) |
+| **Total Used** | **13** | |
+| **Remaining / Reserve** | **9** | Available for future expansion |
+
+Pin count provides comfortable headroom for all current functions with 9 GPIOs in reserve.
+
 ## Functional Requirements
 
 ### Power Path
@@ -71,9 +119,9 @@ At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5
 - Both outputs need adequate filtering, protection and isolation
 
 ### Monitoring and Communication
-- **MCU: STM32G4** — ARM Cortex-M4, hardware CAN-FD, 12-bit ADC, sufficient GPIOs
-- **DroneCAN (UAVCAN v0)** — using [libcanard](https://github.com/dronecan/libcanard) for lightweight CAN implementation. It will convert the battery protocol to DroneCAN, so the PCB needs two seperate CAN buses.
-- **NTC temperature sensors** — monitor battery connector, MOSFETs, and board hotspots (2 sensors should be enough)
+- **Dual CAN bus** — see [MCU and Communication](#mcu-and-communication) section above
+- **Temperature sensors** — 2 pins reserved for monitoring battery connector and MOSFET hotspots (1-Wire or NTC/ADC)
+- **WiFi / BLE** — integrated in ESP32-C3 for wireless diagnostics, configuration, and telemetry
 
 ### Protection
 - **Short circuit protection via fuse**
@@ -89,14 +137,14 @@ At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5
 │   └── 18SBC.kicad_pcb
 ├── docs/               # Documentation and datasheets
 ├── manufacturing/      # Gerber files and BOM
-├── firmware/           # STM32G4 firmware (if applicable)
+├── firmware/           # ESP32-C3 firmware (ESP-IDF / Arduino)
 └── images/             # Board renders and photos
 ```
 
 ## Deliverables
 
 1. **Schematic** — complete KiCad schematic with all subsystems
-2. **PCB Layout** — rectangular board, routed for high current
+2. **PCB Layout** — rectangular board, routed for high current, antenna keepout zone respected
 3. **BOM** — full bill of materials with supplier links
 4. **Gerber files** — manufacturing-ready output for JLCPCB
 5. **Documentation** — kicad files with component/footprint libraries in a zip folder.
@@ -109,6 +157,9 @@ At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5
 
 ## Reference Links
 
+- [ESP32-C3-MINI-1 Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-c3-mini-1_datasheet_en.pdf) — MCU module
+- [MCP2515 Datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/MCP2515-Stand-Alone-CAN-Controller-with-SPI-20001801J.pdf) — CAN controller
+- [SN65HVD230 Datasheet](https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf) — 3.3V CAN transceiver
 - [DroneCAN](https://dronecan.github.io/) — CAN protocol for UAVs
 - [libcanard](https://github.com/dronecan/libcanard) — lightweight DroneCAN implementation in C
 - [Prolanv EN60A Connector](https://www.prolanv.com/2_2552837_5851637.html) — battery connector datasheet
