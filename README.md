@@ -15,6 +15,55 @@ The 18SBC is a battery connector board that interfaces 18S smart battery packs (
 - Dual CAN bus communication (battery protocol + DroneCAN)
 - Wireless connectivity (WiFi / BLE) for diagnostics and configuration
 
+## Board Overview (Fusion 360 Renders)
+
+> **Note:** These renders are for visualization purposes — the ESP32-C3, MCP2515, and other small ICs are not yet modeled in the CAD. The renders show the physical layout of the major connectors, fuse, and power path components.
+
+### Render 1 — Board Inserted in 18S Tattu Battery
+
+![18SBC in Tattu Battery](images/18SBC_in_battery.png)
+
+The board is shown inserted vertically into an 18S Tattu 4.0 smart battery pack to illustrate how the battery connector (purple, top) mates with the battery's interface.
+
+**Visible components (top to bottom):**
+
+| Position | Component | Description |
+|---|---|---|
+| Top | **Purple connector** (Prolanv EN60A) | Battery interface — carries power (+ / -) and CAN L/H to the PCB |
+| Upper right | **White ceramic component** (AMXL-250) | 250A main fuse, bolt-mounted on 2x AMT0650009DB0000G screw terminals |
+| Below fuse | **MOSFETs** | Power switching (precharge, kill switch, power enable) |
+| Below MOSFETs | **Black cable** with ring lug | Negative output to Hobbywing X15 propulsion, connected via AMT0650009DB0000G screw terminal |
+| Middle left | **Red cable** with ring lug | Positive output to Hobbywing X15 propulsion, connected via AMT0650009DB0000G screw terminal |
+| Bottom | **AT13-12PB-BM03** signal connector | 12-position Amphenol AT series — interfaces with the drone electrical harness (12V, 5V, GND, CAN, signals) |
+
+### Render 2 — Board Front View
+
+![18SBC Front View](images/18SBC_front_view.png)
+
+Frontal view of the PCB showing component placement and general board layout. The power path flows from the battery connector (top) through the fuse and MOSFETs to the propulsion screw terminals (red/black cables). The signal connector exits at the bottom toward the drone harness.
+
+### Signal Flow
+
+```
+Battery (18S Tattu 4.0)
+        |
+        v
++---------------------+
+|  Purple Connector    |  <- Power (+ / -) + CAN L/H from battery
+|  (Prolanv EN60A)     |
++---------------------+
+|  AMXL-250 Fuse       |  <- 250A short-circuit protection
++---------------------+
+|  MOSFETs             |  <- Precharge / Kill switch / Power enable
++---------------------+
+|  Screw Terminals     |  <- Red (+) and Black (-) cables
+|  (AMT0650009DB0000G) |     to Hobbywing X15 propulsion
++---------------------+
+|  AT Signal Connector |  <- 12V, 5V, GND, DroneCAN, signals
+|  (AT13-12PB-BM03)   |     to aircraft harness
++---------------------+
+```
+
 ## Specifications
 
 | Parameter | Value |
