@@ -10,7 +10,8 @@ The 18SBC is a battery connector board that interfaces 18S smart battery packs (
 
 - Support 18S smart batteries (Tattu 4.0 compatible)
 - Handle 100A continuous / 200A spike current
-- Provide regulated and isolated 12V and 5V outputs to the main system PCB (5V and 12V can share GND)
+- Provide galvanically isolated 12V output (GNDE) to the aircraft power distribution board
+- Provide non-isolated 5V / 3.3V (GNDI) for onboard BMS logic
 - Active power switching with precharge and emergency shutoff
 - Dual CAN bus communication (battery protocol + DroneCAN)
 - Wireless connectivity (WiFi / BLE) for diagnostics and configuration
@@ -59,7 +60,20 @@ Battery (18S Tattu 4.0)
 |  Screw Terminals     |  <- Red (+) and Black (-) cables
 |  (AMT0650009DB0000G) |     to Hobbywing X15 propulsion
 +---------------------+
-|  AT Signal Connector |  <- 12V, 5V, GND, DroneCAN, signals
+|                       |
+|  HV Bus (54-75.6V)   |
+|    |            |     |
+|    v            v     |
+|  [Buck]    [Push-Pull]|
+|  5V/1A     12V/10A   |
+|  (GNDI)    (isolated) |
+|    |        (GNDE)    |
+|    v            |     |
+|  [LDO]         |     |
+|  3.3V          |     |
+|  (GNDI)        |     |
++---------------------+
+|  AT Signal Connector |  <- 12V (GNDE), DroneCAN, signals
 |  (AT13-12PB-BM03)   |     to aircraft harness
 +---------------------+
 ```
@@ -143,7 +157,7 @@ This connector interfaces the 18SBC with the rest of the drone's electrical syst
 | Contact Plating | Tin |
 | Mating Connector | AT series cable plug (wire-to-board) |
 
-The AT series is an automotive/industrial-grade connector family designed for harsh environments — vibration-resistant, sealed, and rated for high mating cycles. The 12 positions carry regulated power outputs (12V, 5V, GND), CAN bus lines, and control signals.
+The AT series is an automotive/industrial-grade connector family designed for harsh environments — vibration-resistant, sealed, and rated for high mating cycles. The 12 positions carry the isolated 12V output (GNDE), CAN bus lines, and control signals.
 
 ### Main Fuse (Short-Circuit Protection)
 
@@ -217,9 +231,27 @@ Pin count provides comfortable headroom for all current functions with 9 GPIOs i
 - **Main fuse** — Eaton AMXL-250 (250A) bolt-in fuse for short-circuit protection
 
 ### Voltage Regulation
-- **12V regulated output** — buck converter from battery voltage
-- **5V regulated output** — buck converter from battery voltage
-- Both outputs need adequate filtering, protection and isolation
+
+The power supply architecture uses two independent stages with full galvanic isolation between internal BMS logic (GNDI) and external drone systems (GNDE).
+
+#### Internal Supply (GNDI — non-isolated)
+
+Provides power for onboard logic (ESP32, MCP2515, CAN transceivers, gate drivers, sensors).
+
+| Stage | Topology | IC | Input | Output | Notes |
+|---|---|---|---|---|---|
+| 5V Rail | Sync Buck | e.g. MP9487 or similar (100V+, integrated FETs, ≥1A) | 54–75.6V (HV Bus) | 5V / 1A | Main internal rail |
+| 3.3V Rail | LDO | e.g. AMS1117-3.3 or similar | 5V | 3.3V | ESP32, MCP2515, CAN transceivers |
+
+#### External Supply (GNDE — galvanically isolated)
+
+Provides 12V to the aircraft power distribution board. Full galvanic isolation ensures no ground loops between the 6 battery packs in the aircraft, and prevents EMI/noise from the propulsion system reaching sensitive avionics.
+
+| Stage | Topology | IC | Input | Output | Notes |
+|---|---|---|---|---|---|
+| Isolated 12V | Push-Pull | e.g. TI LM5030 or similar push-pull controller | 54–75.6V (HV Bus) | 12V / 10A (isolated) | 1:N transformer, GNDI ↔ GNDE fully isolated |
+
+> **Isolation rationale:** The aircraft uses 6 independent battery packs, each with its own 18SBC. All 6 isolated 12V outputs are combined on a central power distribution board. Without isolation, all battery GNDs would be connected through the shared 12V/5V rails — creating ground loops and coupling propulsion noise into avionics. Galvanic isolation on each 18SBC prevents this.
 
 ### Monitoring and Communication
 - **Dual CAN bus** — see [MCU and Communication](#mcu-and-communication) section above
