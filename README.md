@@ -11,7 +11,7 @@ The 18SBC is a battery connector board that interfaces 18S smart battery packs (
 - Support 18S smart batteries (Tattu 4.0 compatible)
 - Handle 100A continuous / 200A spike current
 - Provide galvanically isolated 12V output (GNDE) to the aircraft power distribution board
-- Provide non-isolated 5V / 3.3V (GNDI) for onboard BMS logic
+- Provide non-isolated 5V / 3.3V (GNDI) for onboard logic (ESP32, CAN, diagnostics)
 - Active power switching with precharge and emergency shutoff
 - Dual CAN bus communication (battery protocol + DroneCAN)
 - Wireless connectivity (WiFi / BLE) for diagnostics and configuration
@@ -232,7 +232,7 @@ Pin count provides comfortable headroom for all current functions with 9 GPIOs i
 
 ### Voltage Regulation
 
-The power supply architecture uses two independent stages with full galvanic isolation between internal BMS logic (GNDI) and external drone systems (GNDE).
+The power supply architecture uses two independent stages with full galvanic isolation between internal onboard logic (GNDI) and external drone systems (GNDE).
 
 #### Internal Supply (GNDI — non-isolated)
 
