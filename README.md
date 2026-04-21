@@ -107,6 +107,23 @@ The Hover throttle is ~50%. The 100A nominal rating covers normal operations; th
 
 ### Battery Connector
 
+#### Mating Connector (Battery Side): ACES 59604-0169D-003
+
+This is the connector built into the Tattu 4.0 battery pack. The Prolanv EN60A on the 18SBC mates with this connector.
+
+![ACES 59604-0169D-003 Pinout](docs/images/ACES_59604-0169D-003_pinout.png)
+
+| Position | Function | Notes |
+|---|---|---|
+| Left bank (red) | Anodal + (Positive) | Multiple parallel power contacts |
+| Right bank (blue) | Cathode - (Negative) | Multiple parallel power contacts |
+| Center top | CAN H + CAN L | Battery communication bus |
+| PIN1 + PIN2 (center bottom) | Battery Present Detection | Must be shorted (bridged) for the battery to power on |
+
+> **Important:** PIN1 and PIN2 must be short-circuited by the mating connector (Prolanv EN60A) to signal "battery present" — the battery will not power on without this bridge. The 18SBC must include a trace or jumper connecting these two pins on the EN60A side.
+
+#### Board-Side Connector: [Prolanv EN60A](https://www.prolanv.com/2_2552837_5851637.html)
+
 **Selected: [Prolanv EN60A](https://www.prolanv.com/2_2552837_5851637.html)**
 
 | Parameter | Value |
