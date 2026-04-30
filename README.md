@@ -15,10 +15,11 @@ The 18SBC is a battery connector board that interfaces 18S smart battery packs (
 - Active power switching with precharge and emergency shutoff
 - Dual CAN bus communication (battery protocol + DroneCAN)
 - Wireless connectivity (WiFi / BLE) for diagnostics and configuration
+- USB-C interface for debugging, firmware flashing, and development
 
 ## Board Overview (Fusion 360 Renders)
 
-> **Note:** These renders are for visualization purposes — the ESP32-C3, MCP2515, and other small ICs are not yet modeled in the CAD. The renders show the physical layout of the major connectors, fuse, and power path components.
+> **Note:** These renders are for visualization purposes — the ESP32-S3, MCP2515, and other small ICs are not yet modeled in the CAD. The renders show the physical layout of the major connectors, fuse, and power path components.
 
 ### Render 1 — Board Inserted in 18S Tattu Battery
 
@@ -30,7 +31,7 @@ The board is shown inserted vertically into an 18S Tattu 4.0 smart battery pack 
 
 | Position | Component | Description |
 |---|---|---|
-| Top | **Purple connector** (Prolanv EN60A) | Battery interface — carries power (+ / -) and CAN L/H to the PCB |
+| Top | **AMT0650009DB0000G** screw terminals + **DB128V-5.08-4P-GN-S** signal terminal | Battery interface — power (+ / -) and CAN L/H + interlock signals. Layout: Positive (left) \| Signal (center) \| Negative (right) |
 | Upper right | **White ceramic component** (AMXL-250) | 250A main fuse, bolt-mounted on 2x AMT0650009DB0000G screw terminals |
 | Below fuse | **MOSFETs** | Power switching (precharge, kill switch, power enable) |
 | Below MOSFETs | **Black cable** with ring lug | Negative output to Hobbywing X15 propulsion, connected via AMT0650009DB0000G screw terminal |
@@ -50,8 +51,8 @@ Battery (18S Tattu 4.0)
         |
         v
 +---------------------+
-|  Purple Connector    |  <- Power (+ / -) + CAN L/H from battery
-|  (Prolanv EN60A)     |
+|  Battery Terminals   |  <- Power (+ / -) via AMT0650009DB0000G
+|  + Signal Terminal   |  <- CAN L/H + Interlock via DB128V-5.08-4P
 +---------------------+
 |  AMXL-250 Fuse       |  <- 250A short-circuit protection
 +---------------------+
@@ -122,24 +123,36 @@ This is the connector built into the Tattu 4.0 battery pack. The Prolanv EN60A o
 
 > **Important:** PIN1 and PIN2 must be short-circuited by the mating connector (Prolanv EN60A) to signal "battery present" — the battery will not power on without this bridge. The 18SBC must include a trace or jumper connecting these two pins on the EN60A side.
 
-#### Board-Side Connector: [Prolanv EN60A](https://www.prolanv.com/2_2552837_5851637.html)
+#### Board-Side Connectors: AMT0650009DB0000G (Power) + DB128V-5.08-4P-GN-S (Signal)
 
-**Selected: [Prolanv EN60A](https://www.prolanv.com/2_2552837_5851637.html)**
+The original Prolanv EN60A connector was replaced due to mechanical fit issues. The battery interface now uses separate power and signal connectors:
+
+**Power Terminals: [Amphenol Anytek AMT0650009DB0000G](https://www.mouser.com/ProductDetail/Amphenol-Anytek/AMT0650009DB0000G)**
+
+Two screw terminals for positive and negative battery connections, same as used for propulsion output and fuse mounting.
 
 | Parameter | Value |
 |---|---|
-| Current per Power Pair | 60A |
-| Power Pairs | 5 positive + 5 negative |
-| Total Current Capacity | 300A |
-| Signal Pins | 6 |
-| Contact Resistance | 0.6 mOhm |
-| Mating Cycles | 10,000 |
-| Temperature Range | -40C to +125C |
-| Mounting | Right-Angle DIP (PCB mount) |
+| Type | Screw Terminal, Power Tap |
+| Screw Size | M5 |
+| Current Rating | 180A per terminal |
+| Mounting | Through-Hole DIP |
 
-The EN60A provides 300A total capacity across 5 power pairs, giving comfortable headroom above the 200A spike requirement. From the 6 signal pins, only 4 are used.
+**Signal Terminal: [DB128V-5.08-4P-GN-S](https://www.lcsc.com/product-detail/C2915641.html) (4-pin screw terminal block)**
 
-At 200A spike across 4 power pairs (50A each): P = I^2 x R = 50^2 x 0.0006 = 1.5W per pair = 6W total — well within thermal limits.
+| Parameter | Value |
+|---|---|
+| Type | 4-position screw terminal block |
+| Pitch | 5.08mm |
+| Pins | 4 (CAN H, CAN L, Interlock Pin1, Interlock Pin2) |
+| LCSC | C2915641 |
+
+**PCB Layout (top of board, left to right):**
+- Positive terminal (AMT0650009DB0000G) — left
+- Signal terminal (DB128V-5.08-4P-GN-S) — center
+- Negative terminal (AMT0650009DB0000G) — right
+
+> **Hardware Interlock:** Pin1 and Pin2 on the signal terminal must be bridged on the PCB. This signals "battery present" to the battery pack — the battery will not power on without this connection.
 
 ### Propulsion Screw Terminals
 
@@ -176,6 +189,18 @@ This connector interfaces the 18SBC with the rest of the drone's electrical syst
 
 The AT series is an automotive/industrial-grade connector family designed for harsh environments — vibration-resistant, sealed, and rated for high mating cycles. The 12 positions carry the isolated 12V output (GNDE), CAN bus lines, and control signals.
 
+
+
+### USB-C Connector (Debug / Programming)
+
+A USB-C connector is provided for firmware flashing, serial debugging, and development. It connects to the ESP32-S3's native USB interface (GPIO19 = D-, GPIO20 = D+).
+
+| Parameter | Value |
+|---|---|
+| Type | USB-C receptacle |
+| Interface | USB 2.0 (native ESP32-S3 USB) |
+| Purpose | Firmware flashing, serial monitor, debugging |
+| Power | Not used for board power (debug only) |
 ### Main Fuse (Short-Circuit Protection)
 
 **Selected: [Eaton AMXL-250](https://www.eaton.com/content/dam/eaton/products/electronic-components/resources/data-sheet/eaton-amx-amxl-automotive-bolt-in-fuse-data-sheet-elx1218-en.pdf)**
@@ -194,22 +219,22 @@ The 250A fuse rating provides short-circuit protection while allowing the full 2
 
 ## MCU and Communication
 
-### MCU: ESP32-C3-MINI-1
+### MCU: ESP32-S3-WROOM-1-N16R8
 
-The ESP32-C3-MINI-1 module is a compact RISC-V based microcontroller with integrated wireless connectivity. It includes a PCB antenna — no external antenna components are required. A keepout zone must be maintained around the antenna area on the PCB layout (no copper / ground plane underneath).
+The ESP32-S3-WROOM-1-N16R8 module is a compact RISC-V based microcontroller with integrated wireless connectivity. It includes a PCB antenna — no external antenna components are required. A keepout zone must be maintained around the antenna area on the PCB layout (no copper / ground plane underneath).
 
 | Parameter | Value |
 |---|---|
-| Core | 32-bit RISC-V, 160 MHz |
-| Flash | 4 MB (integrated) |
-| SRAM | 400 KB |
+| Core | Dual-core Xtensa LX7, 240 MHz |
+| Flash | 16 MB (external quad SPI) |
+| SRAM | 512 KB |
 | WiFi | 802.11 b/g/n (2.4 GHz) |
 | Bluetooth | BLE 5.0 |
-| GPIOs | 22 |
+| GPIOs | 45 |
 | SPI | 3x (1 used for dual MCP2515) |
-| ADC | 6 channels, 12-bit |
+| ADC | 20 channels, 12-bit |
 | Operating Voltage | 3.0 – 3.6V |
-| Deep Sleep Current | 5 uA |
+| Deep Sleep Current | 7 uA |
 | Antenna | Integrated PCB antenna |
 
 ### Dual CAN Bus (2x MCP2515 + Transceiver)
@@ -234,8 +259,9 @@ The board converts between the battery protocol (CAN 1) and DroneCAN (CAN 2) usi
 | MCP2515 #2 — CS2, INT2 | 2 | CAN 2 (Drone) |
 | Temperature Sensors | 2 | 1-Wire (e.g. DS18B20) or analog NTC via ADC |
 | Circuit Switching | 4 | MOSFET gate drive (e.g. precharge, kill switch, power enable) |
-| **Total Used** | **13** | |
-| **Remaining / Reserve** | **9** | Available for future expansion |
+| USB (D+ / D-) | 2 | Native USB for debugging/flashing |
+| **Total Used** | **15** | |
+| **Remaining / Reserve** | **30** | Available for future expansion |
 
 Pin count provides comfortable headroom for all current functions with 9 GPIOs in reserve.
 
@@ -273,7 +299,7 @@ Provides 12V to the aircraft power distribution board. Full galvanic isolation e
 ### Monitoring and Communication
 - **Dual CAN bus** — see [MCU and Communication](#mcu-and-communication) section above
 - **Temperature sensors** — 2 pins reserved for monitoring battery connector and MOSFET hotspots (1-Wire or NTC/ADC)
-- **WiFi / BLE** — integrated in ESP32-C3 for wireless diagnostics, configuration, and telemetry
+- **WiFi / BLE** — integrated in ESP32-S3 for wireless diagnostics, configuration, and telemetry
 
 ### Protection
 - **Short circuit protection** — Eaton AMXL-250 bolt-in fuse (250A, 125Vdc) mounted on dedicated screw terminals
@@ -289,7 +315,7 @@ Provides 12V to the aircraft power distribution board. Full galvanic isolation e
 │   └── 18SBC.kicad_pcb
 ├── docs/               # Documentation and datasheets
 ├── manufacturing/      # Gerber files and BOM
-├── firmware/           # ESP32-C3 firmware (ESP-IDF / Arduino)
+├── firmware/           # ESP32-S3 firmware (ESP-IDF / Arduino)
 └── images/             # Board renders and photos
 ```
 
@@ -309,7 +335,7 @@ Provides 12V to the aircraft power distribution board. Full galvanic isolation e
 
 ## Reference Links
 
-- [ESP32-C3-MINI-1 Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-c3-mini-1_datasheet_en.pdf) — MCU module
+- [ESP32-S3-WROOM-1-N16R8 Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1-n16r8_datasheet_en.pdf) — MCU module
 - [MCP2515 Datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/MCP2515-Stand-Alone-CAN-Controller-with-SPI-20001801J.pdf) — CAN controller
 - [SN65HVD230 Datasheet](https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf) — 3.3V CAN transceiver
 - [AMT0650009DB0000G (Mouser)](https://www.mouser.com/ProductDetail/Amphenol-Anytek/AMT0650009DB0000G) — 180A screw terminal (propulsion + fuse mount)
@@ -317,7 +343,8 @@ Provides 12V to the aircraft power distribution board. Full galvanic isolation e
 - [Eaton AMXL-250 Datasheet (PDF)](https://www.eaton.com/content/dam/eaton/products/electronic-components/resources/data-sheet/eaton-amx-amxl-automotive-bolt-in-fuse-data-sheet-elx1218-en.pdf) — 250A bolt-in fuse
 - [DroneCAN](https://dronecan.github.io/) — CAN protocol for UAVs
 - [libcanard](https://github.com/dronecan/libcanard) — lightweight DroneCAN implementation in C
-- [Prolanv EN60A Connector](https://www.prolanv.com/2_2552837_5851637.html) — battery connector datasheet
+- [DB128V-5.08-4P-GN-S (LCSC)](https://www.lcsc.com/product-detail/C2915641.html) — 4-pin screw terminal block (battery signal connector)
+- [ESP32-S3-WROOM-1-N16R8 (LCSC)](https://www.lcsc.com/product-detail/C2913202.html) — MCU module (LCSC sourcing)
 
 ## License
 
