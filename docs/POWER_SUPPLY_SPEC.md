@@ -42,7 +42,7 @@ The 18SBC includes two independent step-down voltage regulators to provide power
 The 18SBC has two electrically separated ground domains:
 
 ### Internal GND (GNDI)
-- ESP32 MCU
+- ESP32-S3 MCU
 - BMS logic
 - MOSFET gate drivers
 - Cell voltage sensing
@@ -73,7 +73,7 @@ Signals crossing from External to Internal domain (or vice versa) **must be isol
 
 ## Internal Power Supply
 
-> **TBD** - The power source for the internal domain (ESP32, BMS logic, etc.) is yet to be defined. Options under consideration include a dedicated isolated DC/DC converter from the HV bus or an isolated tap from one of the external regulators.
+> **TBD** - The power source for the internal domain (ESP32-S3, BMS logic, etc.) is yet to be defined. Options under consideration include a dedicated isolated DC/DC converter from the HV bus or an isolated tap from one of the external regulators.
 
 ## Integration Notes
 
